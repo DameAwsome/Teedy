@@ -112,7 +112,85 @@
     </execution>
   </executions>
 </plugin>
+<plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-pmd-plugin</artifactId>
+      <version>3.21.0</version>
+      <configuration>
+        <rulesets>
+          <ruleset>/rulesets/java/basic.xml</ruleset>
+          <ruleset>/rulesets/java/braces.xml</ruleset>
+          <ruleset>/rulesets/java/unusedcode.xml</ruleset>
+        </rulesets>
+        <targetJdk>${maven.compiler.target}</targetJdk>
+      </configuration>
+      <executions>
+        <execution>
+          <phase>verify</phase>
+          <goals>
+            <goal>pmd</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
 
+    <!-- JaCoCo 插件 -->
+    <plugin>
+      <groupId>org.jacoco</groupId>
+      <artifactId>jacoco-maven-plugin</artifactId>
+      <version>0.8.10</version>
+      <executions>
+        <execution>
+          <goals>
+            <goal>prepare-agent</goal>
+          </goals>
+        </execution>
+        <execution>
+          <id>report</id>
+          <phase>prepare-package</phase>
+          <goals>
+            <goal>report</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+
+    <!-- Javadoc 插件 -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-javadoc-plugin</artifactId>
+      <version>3.6.3</version>
+      <configuration>
+        <failOnError>false</failOnError>
+        <encoding>${project.build.sourceEncoding}</encoding>
+        <doclint>none</doclint> <!-- 忽略警告 -->
+      </configuration>
+      <executions>
+        <execution>
+          <id>attach-javadocs</id>
+          <phase>package</phase>
+          <goals>
+            <goal>jar</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+
+    <!-- Site 插件 -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-site-plugin</artifactId>
+      <version>4.0.0-M8</version>
+      <configuration>
+        <reportPlugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>3.4.1</version>
+          </plugin>
+        </reportPlugins>
+      </configuration>
+    </plugin>
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-javadoc-plugin</artifactId>

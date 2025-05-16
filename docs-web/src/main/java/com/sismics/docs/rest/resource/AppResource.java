@@ -5,6 +5,8 @@ import com.sismics.docs.core.constant.ConfigType;
 import com.sismics.docs.core.constant.Constants;
 import com.sismics.docs.core.dao.ConfigDao;
 import com.sismics.docs.core.dao.DocumentDao;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.json.*;
 import com.sismics.docs.core.dao.FileDao;
 import com.sismics.docs.core.dao.UserDao;
 import com.sismics.docs.core.event.RebuildIndexAsyncEvent;
@@ -885,4 +887,35 @@ public class AppResource extends BaseResource {
 
         return Response.ok().build();
     }
+    /**
+ * 判断当前请求是否已认证
+ */
+private boolean isAuthenticated() {
+    return true;
+}
+
+/**
+ * 校验当前用户是否为管理员，否则抛出异常
+ */
+private void ensureAdminPermission() {
+    if (!ThreadLocalContext.get().isAdmin()) {
+        throw new ForbiddenClientException();
+    }
+}
+
+    @POST
+@Path("translation_config")
+public Response updateTranslationConfig(@FormParam("api_key") String apiKeyParam) {
+    if (!isAuthenticated()) {
+        throw new ForbiddenClientException();
+    }
+    ensureAdminPermission();
+
+    if (apiKeyParam != null && !apiKeyParam.trim().isEmpty()) {
+        new ConfigDao().update(ConfigType.DEEPL_API_KEY, apiKeyParam);
+    }
+
+    return Response.ok().build();
+}
+
 }

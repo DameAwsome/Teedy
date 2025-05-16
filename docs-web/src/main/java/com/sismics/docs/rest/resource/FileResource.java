@@ -4,10 +4,12 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.sismics.docs.core.constant.PermType;
+import com.sismics.docs.core.service.TextTranslationService;
 import com.sismics.docs.core.dao.AclDao;
 import com.sismics.docs.core.dao.DocumentDao;
 import com.sismics.docs.core.dao.FileDao;
 import com.sismics.docs.core.dao.UserDao;
+import java.io.Console;
 import com.sismics.docs.core.dao.dto.DocumentDto;
 import com.sismics.docs.core.event.DocumentUpdatedAsyncEvent;
 import com.sismics.docs.core.event.FileDeletedAsyncEvent;
@@ -808,5 +810,63 @@ public class FileResource extends BaseResource {
                 throw new ForbiddenClientException();
             }
         }
+        
     }
+    @POST
+@Path("{id}/translate")
+public Response translateFile(@PathParam("id") String fileId, @FormParam("targetLanguage") String targetLanguage) {
+
+    // 2. 读取文件信息
+    FileDao fileDao = new FileDao();
+    File file = fileDao.getFile(fileId);
+    if (file == null) {
+        throw new NotFoundException("File not found with id: " + fileId);
+    }
+
+    // 3. 获取文件内容
+    String content = file.getContent();
+    if (content == null || content.trim().isEmpty()) {
+        try {
+            java.nio.file.Path storedFile = DirectoryUtil.getStorageDirectory().resolve(file.getId());
+            content = java.nio.file.Files.readString(storedFile);
+        } catch (Exception e) {
+            throw new ServerException("FileContentError", "无法读取文件内容", e);
+        }
+    }
+
+    if (content == null || content.trim().isEmpty()) {
+        throw new ServerException("FileContentError", "文件内容为空，无法翻译");
+    }
+
+    // 4. 确定源语言
+    String sourceLanguage = null;
+    String documentId = file.getDocumentId();
+    if (documentId != null) {
+        DocumentDao documentDao = new DocumentDao();
+        DocumentDto documentDto = documentDao.getDocument(documentId, PermType.READ, getTargetIdList(null));
+        if (documentDto != null && documentDto.getLanguage() != null && !documentDto.getLanguage().trim().isEmpty()) {
+            sourceLanguage = documentDto.getLanguage();
+        }
+    }
+
+    if (sourceLanguage == null || sourceLanguage.trim().isEmpty()) {
+        sourceLanguage = "EN"; // 默认英文
+    } else {
+        if (sourceLanguage.length() == 3) {
+            sourceLanguage = sourceLanguage.substring(0, 2);
+        }
+        sourceLanguage = sourceLanguage.toUpperCase();
+    }
+
+    // 5. 调用翻译服务进行翻译
+    String translatedText = TextTranslationService.getInstance().translateText(content, sourceLanguage, targetLanguage);
+
+    // 6. 返回结果
+    return Response.ok()
+        .entity(Json.createObjectBuilder()
+            .add("translatedContent", translatedText)
+            .build())
+        .build();
+}
+
 }

@@ -3,7 +3,7 @@
 /**
  * File modal view controller.
  */
-angular.module('docs').controller('FileModalView', function ($uibModalInstance, $scope, $state, $stateParams, $sce, Restangular, $transitions) {
+angular.module('docs').controller('FileModalView', function ($uibModal,$uibModalInstance, $scope, $state, $stateParams, $sce, Restangular, $transitions) {
   var setFile = function (files) {
     // Search current file
     _.each(files, function (value) {
@@ -124,3 +124,12 @@ angular.module('docs').controller('FileModalView', function ($uibModalInstance, 
     return $scope.file && $scope.file.mimetype !== 'application/pdf';
   };
 });
+$scope.openTranslateModal = function() {
+  $uibModal.open({
+    templateUrl: 'partial/docs/file.translate.modal.html',
+    controller: 'FileTranslateModal',
+    resolve: {
+      file: function() { return $scope.file; }
+    }
+  });
+};

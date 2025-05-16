@@ -117,4 +117,29 @@ angular.module('docs').controller('SettingsConfig', function($scope, $rootScope,
       $scope.loadWebhooks();
     });
   };
+  $scope.translate = { api_key: '' };
+
+  // Load current translate API key
+  $scope.loadTranslateConfig = function () {
+    Restangular.one('app').one('config_translate').get()
+        .then(function (data) {
+          $scope.translate.api_key = data.api_key || '';
+        });
+  };
+  $scope.loadTranslateConfig();
+
+  // Save translate API key with JSON
+  $scope.editTranslateConfig = function() {
+    // 把 scope 里的 translate 对象（包含 api_key）当作 POST 的 body
+    Restangular
+        .one('app', 'config_translate')
+        .customPOST({ api_key: $scope.translate.api_key })
+        .then(function(resp) {
+          // 成功回调
+          alert('保存成功！');
+        }, function(err) {
+          // 错误回调
+          console.error(err);
+        });
+  };
 });

@@ -1,0 +1,15 @@
+<div class="modal-header">
+    <h3 class="modal-title">用户注册申请</h3>
+  </div>
+  <div class="modal-body">
+    <form name="registrationForm" ng-submit="submitRequest()">
+      <input type="text" ng-model="user.username" placeholder="用户名" required />
+      <input type="password" ng-model="user.password" placeholder="密码" required />
+      <input type="email" ng-model="user.email" placeholder="邮箱" required />
+      <button type="submit">提交申请</button>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button ng-click="cancel()">取消</button>
+  </div>
+  

@@ -3,7 +3,7 @@
 /**
  * Navigation controller.
  */
-angular.module('docs').controller('Navigation', function($scope, $state, $stateParams, $rootScope, User) {
+angular.module('docs').controller('Navigation', function($scope, $state, $stateParams, $rootScope, User, $uibModal) {
   User.userInfo().then(function(data) {
     $rootScope.userInfo = data;
     if (data.anonymous) {
@@ -29,5 +29,11 @@ angular.module('docs').controller('Navigation', function($scope, $state, $stateP
       $state.go('main');
     });
     $event.preventDefault();
+  };
+  $scope.openRegistrationModal = function() {
+    $uibModal.open({
+      templateUrl: 'partial/docs/user-registration-modal.html',  // 模态框HTML模板路径
+      controller: 'UserRequestModalCtrl'  // 之前仿写的用户注册请求控制器名字
+    });
   };
 });

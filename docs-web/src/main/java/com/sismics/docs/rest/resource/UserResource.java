@@ -43,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * User REST resources.
@@ -1100,7 +1101,120 @@ public class UserResource extends BaseResource {
                 .add("status", "ok");
         return Response.ok().entity(response.build()).build();
     }
+    public Response submitNewAccountRequest(
+            @FormParam("username") String username,
+            @FormParam("password") String password,
+            @FormParam("email") String email
+    ) {
+        validateInput(username, password, email);
 
+        if (new UserDao().getActiveByUsername(username) != null) {
+            throw new WebApplicationException("Username already in use", 409);
+        }
+
+        NewUserRequest request = new NewUserRequest();
+        request.setId(UUID.randomUUID().toString());
+        request.setUsername(username);
+        request.setPassword(password);
+        request.setEmail(email);
+        request.setRequestedAt(new Date());
+        request.setQuota(100L * 1000 * 1000 * 1000);
+        request.setState(NewUserRequest.Status.WAITING);
+
+        new NewUserRequestDao().insert(request);
+
+        return Response.ok(Json.createObjectBuilder().add("result", "submitted").build()).build();
+    }
+
+    @GET
+    @Path("/pending")
+    public Response fetchAllPendingRequests() {
+        enforceAdmin();
+
+        List<NewUserRequest> requests = new NewUserRequestDao().listPending();
+
+        JsonArrayBuilder arr = Json.createArrayBuilder();
+        for (NewUserRequest r : requests) {
+            arr.add(Json.createObjectBuilder()
+                    .add("id", r.getId())
+                    .add("username", r.getUsername())
+                    .add("email", r.getEmail())
+                    .add("state", r.getState().name())
+                    .add("timestamp", r.getRequestedAt().getTime()));
+        }
+
+        return Response.ok(Json.createObjectBuilder().add("items", arr).build()).build();
+    }
+
+    @POST
+    @Path("/request/{id}/approve")
+    public Response approve(@PathParam("id") String id) {
+        enforceAdmin();
+
+        NewUserRequestDao dao = new NewUserRequestDao();
+        NewUserRequest req = dao.findById(id);
+        if (req == null) {
+            throw new NotFoundException("Request not found");
+        }
+
+        User user = new User();
+        user.setUsername(req.getUsername());
+        user.setPassword(req.getPassword());
+        user.setEmail(req.getEmail());
+        user.setStorageQuota(req.getQuota());
+        user.setOnboarding(true);
+        user.setRoleId("USER");
+        try{
+            new UserDao().create(user, ThreadLocalContext.get().getUserId());
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+        req.setState(NewUserRequest.Status.ACCEPTED);
+        req.setHandledBy(ThreadLocalContext.get().getUsername());
+        req.setHandledAt(new Date());
+
+        dao.update(req);
+
+        return Response.ok(Json.createObjectBuilder().add("result", "approved").build()).build();
+    }
+
+    @POST
+    @Path("/request/{id}/deny")
+    public Response deny(@PathParam("id") String id) {
+        enforceAdmin();
+
+        NewUserRequestDao dao = new NewUserRequestDao();
+        NewUserRequest req = dao.findById(id);
+        if (req == null) {
+            throw new NotFoundException("Request not found");
+        }
+
+        req.setState(NewUserRequest.Status.REJECTED);
+        req.setHandledBy(ThreadLocalContext.get().getUsername());
+        req.setHandledAt(new Date());
+
+        dao.update(req);
+
+        return Response.ok(Json.createObjectBuilder().add("result", "rejected").build()).build();
+    }
+
+    // --- Helpers ---
+
+    private void validateInput(String u, String p, String e) {
+        if (u == null || u.length() < 3 || u.length() > 50)
+            throw new WebApplicationException("Invalid username", 400);
+        if (p == null || p.length() < 8)
+            throw new WebApplicationException("Invalid password", 400);
+        if (e == null || !e.contains("@"))
+            throw new WebApplicationException("Invalid email", 400);
+    }
+
+    private void enforceAdmin() {
+        if (!ThreadLocalContext.get().isAdmin()) {
+            throw new ForbiddenException("Admin access required");
+        }
+    }
     /**
      * Returns the authentication token value.
      *

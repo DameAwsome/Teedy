@@ -6,7 +6,14 @@ angular.module('docs').controller('UserRequestModalCtrl', function($scope, Resta
         password: '',
         email: ''
     };
-
+    var data = 'username=' + user.username +
+        '&password=' + user.password +
+        '&email=' + user.email +
+        '&storage_quota=' + user.storage_quota;
+        var promise = Restangular
+        .one('user')
+        .one('register_request')
+        .customPUT(data, '', {}, { 'Content-Type': 'application/x-www-form-urlencoded' });
     $scope.sendRequest = function () {
         var payload = {
             username: $scope.formData.username,
